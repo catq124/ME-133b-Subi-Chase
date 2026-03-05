@@ -13,8 +13,6 @@ BARK   = [0.325, 0.192, 0.094]  # bark brown
 GREEN  = [0.133, 0.545, 0.133]  # forrest green
 SKY    = [0.816, 0.925, 0.992]  # light blue
 
-#blah blah blah
-
 if __name__== "__main__":
     # Grab the dimensions.
     rows = map[0]
