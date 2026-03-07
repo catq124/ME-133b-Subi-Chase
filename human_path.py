@@ -15,46 +15,40 @@ import bisect
 
 from math       import inf
 from visualgrid import VisualGrid
+from maps import map, easy, med, diff
+from maps import start_e, goal_e, start_m, goal_m, start_d, goal_d
 
+# defining the grid
 
-#
-#  Define the Grid
-#
+def wallpoints(walls):
 
-easy = ['####################',
-         '#                  #',
-         '#                  #', 
-         '#   ########       #',
-         '#          ##      #',
-         '#   S       ##G    #',
-         '#            ####  #',
-         '#                  #',
-         '#                  #',
-         '####################']
+    # use set to avoid duplicate points at corners
+    points = set()
+    for wall in walls:
+        for i in range(len(wall) - 1):
+            (x1, y1) = wall[i]
+            (x2, y2) = wall[i+1]
+            # if vertical wall
+            if x1 == x2:
+                ymin = min(y1, y2)
+                ymax = max(y1, y2)
+                for y in range(ymin, ymax+1):
+                    points.add((x1, y))
+            # if horizontal wall
+            elif y1 == y2:
+                xmin = min(x1, x2)
+                xmax = max(x1, x2)
+                for x in range(xmin, xmax+1):
+                    points.add((x, y1))
 
-medium = ['#####################',
-         '#    #    #    #    #',
-         '#    #    #    #G   #', 
-         '#    #    #    #    #',
-         '##  ## ##### ###    #',
-         '#  S           #    #',
-         '#                   #',
-         '###### ### #####    #',
-         '#       #      #    #',
-         '#       #      #    #',
-         '#####################']
+    return points
 
-hard = ['#####################',
-         '#    #    #    #    #',
-         '#    #    #    #G   #', 
-         '#    #    #    #    #',
-         '##  ## ##### ###    #',
-         '#  S           #    #',
-         '#                   #',
-         '###### ### #####    #',
-         '#       #      #    #',
-         '#       #      #    #',
-         '#####################']
+def rows_cols(x, y, rows):
+    
+    row = rows - y
+    col = x - 1 
+    
+    return (row, col)
 
 #
 #   Colors
@@ -108,10 +102,10 @@ class Node:
     def __lt__(self, other):
         return self.cost < other.cost
 
-
     # Print (for debugging).
     def __str__(self):
         return("(%2d,%2d)" % (self.row, self.col))
+    
     def __repr__(self):
         return("<Node %s, %7s, cost %f>" %
                (str(self),
@@ -184,29 +178,34 @@ if __name__== "__main__":
 
     ####################  INITIALIZE  ####################
     # Choose the map.
+    levels = {
+        "1": (easy, start_e, goal_e),
+        "2": (med, start_m, goal_m),
+        "3": (diff, start_d, goal_d)
+    }
     grid_choice = input("Choose level of difficulty (1 -> easy), (2 -> medium), (3 -> hard): ").strip()
-    if grid_choice == "1":
-        grid = easy
-    elif grid_choice == "2":
-        grid = medium
-    elif grid_choice == "3":
-        grid = hard
-    else:
+    if grid_choice not in levels:
         raise ValueError("NOT A VALID INPUT")
+    
+    walls, start_xy, goal_xy = levels[grid_choice]
 
     # Grab the dimensions.
-    rows = len(grid)
-    cols = max([len(line) for line in grid])
+    rows = map[1]
+    cols = map[0]
 
     # Set up the visual grid.
     visual = VisualGrid(rows, cols)
 
     # Parse the grid to set up the nodes list, as well as start/goal.
+    blocked = wallpoints(walls)
+    
     nodes  = []
-    for row in range(rows):
-        for col in range(cols):
+    for y in range(1, rows + 1):
+        for x in range(1, cols + 1):
+            row, col = rows_cols(x, y, rows)
+
             # Create a node per space, except only color walls black.
-            if grid[row][col] == '#':
+            if (x, y) in blocked:
                 visual.color(row, col, BLACK)
             else:
                 nodes.append(Node(row, col))
@@ -220,14 +219,19 @@ if __name__== "__main__":
                 node.neighbors.append(others[0])
 
     # Grab/mark the start/goal.
-    start = [n for n in nodes if grid[n.row][n.col] in 'Ss'][0]
-    goal  = [n for n in nodes if grid[n.row][n.col] in 'Gg'][0]
+    srow, scol = rows_cols(start_xy[0], start_xy[1], rows)
+    grow, gcol = rows_cols(goal_xy[0], goal_xy[1], rows)
+
+    start = [n for n in nodes if (n.row, n.col) == (srow, scol)][0]
+    goal  = [n for n in nodes if (n.row, n.col) == (grow, gcol)][0]
+
     visual.write(start.row, start.col, 'S')
     visual.write(goal.row,  goal.col,  'G')
     visual.show(wait="Hit return to start")
-
     ####################  RUN  ####################
+
     # Create a function to show each step.
+    '''
     def show(wait=0.005):
         # Update the grid for all nodes.
         for node in nodes:
@@ -237,9 +241,10 @@ if __name__== "__main__":
             else:           visual.color(node.row, node.col, SKY)
         # Show.
         visual.show(wait)
-
+    '''
     # Run.
-    path = planner(start, goal, show)
+    
+    path = planner(start, goal)
 
     ####################  REPORT  ####################
     # Check the number of nodes.
@@ -258,8 +263,16 @@ if __name__== "__main__":
         print("UNABLE TO FIND A PATH")
     else:
         print("Marking the human path")
-        for node in path:
-            visual.color(node.row, node.col, RED)
+        
+        for i in range (len(path) - 1):
+            
+            r1 = path[i].row
+            c1 = path[i].col
+            r2 = path[i+1].row
+            c2 = path[i+1].col
+
+            visual.segment(r1,c1,r2,c2,RED)
+
         visual.show()
 
     input("Hit return to end")
