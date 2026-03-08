@@ -17,6 +17,8 @@ from math       import inf
 from visualgrid import VisualGrid
 from maps import map, easy, med, diff
 from maps import start_e, goal_e, start_m, goal_m, start_d, goal_d
+import matplotlib.pyplot as plt
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 # defining the grid
 
@@ -170,6 +172,15 @@ def planner(start, goal, show = None, a=1):
         path.insert(0, path[0].parent)
     return path
 
+def time(path, dt = 0.05):
+
+    time_path = []
+    t = 0
+    for node in path:
+        time_path.append((t, node))
+        t += dt
+    
+    return time_path
 ######################################################################
 #
 #  Main Code
@@ -193,9 +204,9 @@ if __name__== "__main__":
     rows = map[1]
     cols = map[0]
 
-    # Set up the visual grid.
+    # Set up the visual grid. -> to go in visualization
     visual = VisualGrid(rows, cols)
-
+    
     # Parse the grid to set up the nodes list, as well as start/goal.
     blocked = wallpoints(walls)
     
@@ -204,13 +215,11 @@ if __name__== "__main__":
         for x in range(1, cols + 1):
             row, col = rows_cols(x, y, rows)
 
-            # Create a node per space, except only color walls black.
-            if (x, y) in blocked:
-                visual.color(row, col, BLACK)
-            else:
+            # create a node per space
+            if (x, y) not in blocked:
                 nodes.append(Node(row, col))
 
-    # Create the neighbors, being the edges between the nodes.
+    # create the neighbors as the edges between the nodes
     for node in nodes:
         for (dr, dc) in [(-1,0), (1,0), (0,-1), (0,1)]:
             others = [n for n in nodes
@@ -225,8 +234,17 @@ if __name__== "__main__":
     start = [n for n in nodes if (n.row, n.col) == (srow, scol)][0]
     goal  = [n for n in nodes if (n.row, n.col) == (grow, gcol)][0]
 
-    visual.write(start.row, start.col, 'S')
-    visual.write(goal.row,  goal.col,  'G')
+    humanpng = plt.imread("human.png")
+    imagebox = OffsetImage(humanpng, zoom=0.04)
+
+    human = AnnotationBbox(
+        imagebox,
+        (start.col + 0.5, rows - start.row - 0.5),
+        frameon=False,
+        zorder=5)
+    
+    visual.ax.add_artist(human)
+
     visual.show(wait="Hit return to start")
     ####################  RUN  ####################
 
@@ -245,34 +263,42 @@ if __name__== "__main__":
     # Run.
     
     path = planner(start, goal)
+    time_path = time(path)
 
-    ####################  REPORT  ####################
-    # Check the number of nodes.
-    '''
-    unknown   = len([n for n in nodes if not n.seen])
-    processed = len([n for n in nodes if n.done])
-    ondeck    = len(nodes) - unknown - processed
-    print("Solution cost %f" % goal.cost)
-    print("%3d states fully processed" % processed)
-    print("%3d states still pending"   % ondeck)
-    print("%3d states never reached"   % unknown)
-    '''
+####################  REPORT  ####################
 
     # Show the path in red.
     if not path:
         print("UNABLE TO FIND A PATH")
     else:
         print("Marking the human path")
-        
-        for i in range (len(path) - 1):
-            
+
+        # draw the entire path and keep it
+        for i in range(len(path) - 1):
             r1 = path[i].row
             c1 = path[i].col
             r2 = path[i+1].row
             c2 = path[i+1].col
 
-            visual.segment(r1,c1,r2,c2,RED)
+            visual.ax.plot(
+                [c1 + 0.5, c2 + 0.5],
+                [rows - r1 - 0.5, rows - r2 - 0.5],
+                color='red',
+                linewidth=3,
+                zorder=4
+            )
 
-        visual.show()
+        for i in range(1, len(path)):
+            human.remove()
+
+            human = AnnotationBbox(
+                imagebox,
+                (path[i].col + 0.5, rows - path[i].row - 0.5),
+                frameon=False,
+                zorder=5
+            )
+            visual.ax.add_artist(human)
+
+            visual.show(0.25)
 
     input("Hit return to end")
