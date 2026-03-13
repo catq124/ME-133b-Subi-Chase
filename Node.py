@@ -22,11 +22,14 @@ UWALL = []
 for wall in walls:
     for i in range(len(wall)-1):
         if wall[i][0] - wall[i+1][0] == 0: #horizontal
-            for x in range(wall[i+1][1]-wall[i][1]-1):
+            for x in range(wall[i+1][1]-wall[i][1]):
                 UWALL.append((wall[i][0], wall[i][1]+x))
         if wall[i][1] - wall[i+1][1] == 0: #vertical
-            for y in range(wall[i+1][0] - wall[i][0]-1):
+            for y in range(wall[i+1][0] - wall[i][0]):
                 RWALL.append((wall[i][0]+y, wall[i][1]))
+
+print("RWALL: ", RWALL)
+print("UWALL: ", UWALL)
 
 dt = 0.5 #second increments
             
@@ -79,7 +82,7 @@ class Node:
         return abs(self.row - other.row) + abs(self.col - other.col)
 
     # Makes list of possible neighbors
-    def findNeighbors(self):
+    def findNeighbors(self, tmax):
         row = self.row
         col = self.col
         t = self.t + dt
@@ -87,14 +90,16 @@ class Node:
 
         self.checkFree()
 
-        if self.freeRight and col+1<map[1]:
-            neighbors.append(Node(row, col+1, t))
-        if self.freeLeft and col-1>=0:
-            neighbors.append(Node(row, col-1, t))
-        if self.freeUp and row-1>=0:
-            neighbors.append(Node(row-1, col, t))
-        if self.freeDown and row+1<map[0]:
-            neighbors.append(Node(row+1, col, t))
+        if t <= tmax:
+            neighbors.append(Node(row, col, t))
+            if self.freeRight and col+1<map[1]:
+                neighbors.append(Node(row, col+1, t))
+            if self.freeLeft and col-1>=0:
+                neighbors.append(Node(row, col-1, t))
+            if self.freeUp and row-1>=0:
+                neighbors.append(Node(row-1, col, t))
+            if self.freeDown and row+1<map[0]:
+                neighbors.append(Node(row+1, col, t))
 
         return neighbors
 
@@ -106,22 +111,31 @@ class Node:
         return False
     
     # Returns orientation of line made by three points a, b, c (0: Straight, 1: Left, -1: Right)
-    def orientation(a, b, c):
+    def orientation(self, a, b, c):
         # Cross product of line AB and line AC
         raw = (b[1]-a[1])*(c[0]-a[0]) - (b[0]-a[0])*(c[1]-a[1])
-        return int(raw/abs(raw))
+        if raw == 0:
+            return 0
+        if raw > 0:
+            return 1
+        if raw < 0:
+            return -1
     
-    # Check line of sight between two nodes (ie. connection)
+    # Check line of sight between two nodes (ie. intersection between two lines)
     def lineOfSight(self, other): 
         node1 = (self.row, self.col)
         node2 = (other.row, other.col)
         for i in range(len(walls)):
             for j in range(len(walls[i])-1):
-                wall1 = walls[i][j]
-                wall2 = walls[i][j+1]
-            if (self.orientation(node1, node2, wall1)*self.orientation(node1, node2, wall2) < 0 and
+                # Line coordinates
+                wall1Raw = walls[i][j]
+                wall2Raw = walls[i][j+1]
+                # Convert to grid coordinates (ie. labeled coordinates/node coordinates)
+                wall1 = (wall1Raw[0]-0.5, wall1Raw[1]-0.5)
+                wall2 = (wall2Raw[0]-0.5, wall2Raw[1]-0.5)
+                if(self.orientation(node1, node2, wall1)*self.orientation(node1, node2, wall2) < 0 and
             self.orientation(wall1, wall2, node1)*self.orientation(wall1, wall2, node2) < 0):
-                return False
+                    return False
         return True
 
     # Define the "less-than" to enable sorting by cost.
@@ -131,7 +145,7 @@ class Node:
 
     # Print (for debugging).
     def __str__(self):
-        return("(%2d,%2d)" % (self.row, self.col))
+        return("(%2d,%2d, %0.1f)" % (self.row, self.col, self.t))
     def __repr__(self):
         return("<Node %s, %7s, cost %f>" %
                (str(self),

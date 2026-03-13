@@ -25,17 +25,8 @@ if __name__== "__main__":
     for i in range(len(walls)):
         for j in range(len(walls[i])-1):
             visual.wall(walls[i][j], walls[i][j+1])
-
-    # Grab/mark the start/goal.
-    start = (0,0)
-    treat = (7,7)
-    catpng = plt.imread("cat_icon.png")
-    treatpng = plt.imread("fish_icon.png")
-    visual.image(start[0], start[1], catpng)
-    visual.image(treat[0],  treat[1],  treatpng)
-    visual.show(wait="Hit return to start")
     
-    humanPath = [Node.Node(0,3,0), Node.Node(3,2,0.5), Node.Node(4,2,1), Node.Node(4,1,1.5), Node.Node(4,0,2)]
+    humanPath = [Node.Node(2,1,0), Node.Node(1,1,0.5), Node.Node(0,1,1), Node.Node(0,2,1.5), Node.Node(0,3,2)]
     tmax = 2
     dt = 0.5
 
@@ -43,21 +34,40 @@ if __name__== "__main__":
     nodes  = []
     for row in range(rows):
         for col in range(cols):
-            for t in range(int(tmax/dt)):
-                # Create node for each space
-                node = Node.Node(row, col, t)
-                nodes.append(node)
-                # Add neighbors if there is still time left
-                if tmax - t >= dt: 
-                    node.neighbors = node.findNeighbors()
-
-
-    cat = Node.Node(start[0], start[1], 0)
-    human = humanPath[0]
-    print (cat.lineOfSight(human))  
-
+            for i in range(int(tmax/dt)+1):
+                t = i*dt
+                nodes.append(Node.Node(row, col, t))
     
-    
+    for node in nodes:
+        # Get neighbor list
+        neighbors = node.findNeighbors(tmax)
+        # Connect all neighbors
+        for neighbor in neighbors:
+            toAdd = next(n for n in nodes if n.row == neighbor.row and n.col == neighbor.col and n.t == neighbor.t)
+            node.neighbors.append(toAdd)
+                    
+    # Grab/mark the start/goal.
+    startCoord = (0,0)
+    treatCoord = (7,7)
+    catpng = plt.imread("cat_icon.png")
+    treatpng = plt.imread("fish_icon.png")
+    humanpng = plt.imread("human_icon.png")
+    visual.image(startCoord[0], startCoord[1], catpng)
+    visual.image(treatCoord[0],  treatCoord[1],  treatpng)
+    visual.image(humanPath[0].row, humanPath[0].col, humanpng)
+    visual.show(wait="Hit return to start")
+
+    start = next(n for n in nodes if n.row == startCoord[0] and n.col == startCoord[1] and n.t == 0)
+    treat  = next(n for n in nodes if n.row == treatCoord[0] and n.col == treatCoord[1] and n.t == 0)
+    treat.t = inf
+
+    catPath = catplanner.catPlanner1(start, treat, humanPath)
+    for i in range(len(catPath)):
+        visual.image(catPath[i].row, catPath[i].col, catpng)
+        visual.image(humanPath[i].row, humanPath[i].col, humanpng)
+        print("CStep ", i, ": ", catPath[i].row, catPath[i].col)
+        print("HStep ", i, ": ", humanPath[i].row, humanPath[i].col)
+        visual.show(wait="Hit return for next step")
 
     
 

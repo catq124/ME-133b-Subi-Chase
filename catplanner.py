@@ -12,50 +12,86 @@ Functions:
 """
 
 import bisect
+from math import inf
 
 # Assume some function nodeAtTime(self, path, time) return Node
 # in human path.py
 
-def catPlanner1(start, goal, hpath, nodes):
+# Returns list of Nodes from start --> end (end going towards goal, as time allots) 
+def catPlanner1(start, goal, hpath, safeDist = 2):
     t = 0
+    dt = hpath[1].t
     tmax = hpath[len(hpath)-1].t
     start.seen   = True
     start.cost   = 0
     start.parent = None
     onDeck = [start]
     path = []
+    finalNodes = []
     
-    while t<=tmax:
-        t =+ 0.5
-        
+    while True:
+        print("*************************************")
         if not (len(onDeck) > 0):
-            return None
+            print("onDeck empty")
+            break
             
         node = onDeck.pop(0)
-        
+        print("Node: ", node.row, node.col, node.t)
+
         node.done = True
-        if goal.done:
+        if node.row == goal.row and node.col == goal.col:
+            finalNodes = [node]
             break
-        
+
+        # Add node to list of final nodes if at tmax (ie. path could end here)
+        if node.t == tmax:
+            finalNodes.append(node)
+
+        print("Neighbor list: ", node.neighbors)
         for neighbor in node.neighbors:
-            if neighbor.done:
+            print("Neighbor: ", neighbor.row, neighbor.col, neighbor.t)
+            # Skip if already done or would be out of time
+            if neighbor.done or neighbor.t > tmax:
+                print("Neighbor done")
                 continue
+            # Get human node at this neighbor's time
+            hnode = hpath[int(neighbor.t/dt)]
+            print("Hnode: ", hnode.row, hnode.col)
+            # Skip if neighbor would be caught
+            if neighbor.distance(hnode) < safeDist and neighbor.lineOfSight(hnode):
+                print("Line of sight: ", neighbor.lineOfSight(hnode))
+                print("Neighbor would get caught")
+                continue
+            # Define neighbor cost
             if neighbor.row == node.row and neighbor.col == node.col:
                 cost = node.cost
             else: cost = node.cost + 1
-
+            print("Neighbor cost: ", cost)
+            
             if neighbor.seen:
                 if neighbor.cost <= cost:
+                    print("Lower neighbor cost already exists")
                     continue
                 else:
+                    print("Removed existing neighbor")
                     onDeck.remove(neighbor)
             
             neighbor.seen = True
             neighbor.cost = cost
             neighbor.parent = node
+            print("Neighbor added")
             bisect.insort(onDeck, neighbor)
+            print("onDeck: ", onDeck)
+            print("---------------------------------------")
 
-    path = [goal]
+    print("Final Nodes: ", finalNodes) 
+    mindist = inf
+    finalNode = None
+    for node in finalNodes:
+        if node.distance(goal) < mindist:
+            mindist = node.distance(goal)
+            finalNode = node
+    path = [finalNode]
     while path[0].parent:
         path.insert(0, path[0].parent)
     return path

@@ -19,6 +19,7 @@ from maps import map, easy, med, diff
 from maps import start_e, goal_e, start_m, goal_m, start_d, goal_d
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import Node
 
 # defining the grid
 
@@ -173,11 +174,10 @@ def planner(start, goal, show = None, a=1):
     return path
 
 def time(path, dt = 0.05):
-
     time_path = []
     t = 0
     for node in path:
-        time_path.append((t, node))
+        time_path.append(Node.Node(node.row, node.col, t))
         t += dt
     
     return time_path
