@@ -15,11 +15,10 @@ import bisect
 
 from math       import inf
 from visualgrid import VisualGrid
-from maps import map, easy, med, diff
-from maps import start_e, goal_e, start_m, goal_m, start_d, goal_d
+import maps
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import Node
+import Node as time_node
 
 # defining the grid
 
@@ -177,65 +176,10 @@ def time(path, dt = 0.05):
     time_path = []
     t = 0
     for node in path:
-        time_path.append(Node.Node(node.row, node.col, t))
+        time_path.append(time_node.Node(node.row, node.col, t))
         t += dt
     
     return time_path
-######################################################################
-#
-#  Main Code
-#
-if __name__== "__main__":
-
-    ####################  INITIALIZE  ####################
-    # Choose the map.
-    levels = {
-        "1": (easy, start_e, goal_e),
-        "2": (med, start_m, goal_m),
-        "3": (diff, start_d, goal_d)
-    }
-    grid_choice = input("Choose level of difficulty (1 -> easy), (2 -> medium), (3 -> hard): ").strip()
-    if grid_choice not in levels:
-        raise ValueError("NOT A VALID INPUT")
-    
-    walls, start_xy, goal_xy = levels[grid_choice]
-
-    # Grab the dimensions.
-    rows = map[1]
-    cols = map[0]
-
-    # Set up the visual grid. -> to go in visualization
-    visual = VisualGrid(rows, cols)
-    
-    # Parse the grid to set up the nodes list, as well as start/goal.
-    blocked = wallpoints(walls)
-    
-    nodes  = []
-    for y in range(1, rows + 1):
-        for x in range(1, cols + 1):
-            row, col = rows_cols(x, y, rows)
-
-            # create a node per space
-            if (x, y) not in blocked:
-                nodes.append(Node(row, col))
-
-    # create the neighbors as the edges between the nodes
-    for node in nodes:
-        for (dr, dc) in [(-1,0), (1,0), (0,-1), (0,1)]:
-            others = [n for n in nodes
-                      if (n.row,n.col) == (node.row+dr,node.col+dc)]
-            if len(others) > 0:
-                node.neighbors.append(others[0])
-
-    # Grab/mark the start/goal.
-    srow, scol = rows_cols(start_xy[0], start_xy[1], rows)
-    grow, gcol = rows_cols(goal_xy[0], goal_xy[1], rows)
-
-    start = [n for n in nodes if (n.row, n.col) == (srow, scol)][0]
-    goal  = [n for n in nodes if (n.row, n.col) == (grow, gcol)][0]
-
-    humanpng = plt.imread("human.png")
-    imagebox = OffsetImage(humanpng, zoom=0.04)
 
     human = AnnotationBbox(
         imagebox,
@@ -246,25 +190,7 @@ if __name__== "__main__":
     visual.ax.add_artist(human)
 
     visual.show(wait="Hit return to start")
-    ####################  RUN  ####################
-
-    # Create a function to show each step.
-    '''
-    def show(wait=0.005):
-        # Update the grid for all nodes.
-        for node in nodes:
-            # Choose the appropriate color.
-            if   node.done: visual.color(node.row, node.col, BARK)
-            elif node.seen: visual.color(node.row, node.col, GREEN)
-            else:           visual.color(node.row, node.col, SKY)
-        # Show.
-        visual.show(wait)
-    '''
-    # Run.
-    
-    path = planner(start, goal)
-    time_path = time(path)
-
+  
 ####################  REPORT  ####################
 
     # Show the path in red.
