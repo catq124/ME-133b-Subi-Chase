@@ -10,6 +10,7 @@ if __name__== "__main__":
 
     map = maps.map # X and Y dims of the map
 
+    # Get user input for map choice
     mapDiff = int(input("Select map difficulty: \n1: Easy \n2: Medium \n3: Hard \n"))
     difficulties = [maps.easy, maps.med, maps.diff]
     walls = difficulties[mapDiff + 1] # Specific map walls
@@ -26,6 +27,7 @@ if __name__== "__main__":
         for j in range(len(walls[i])-1):
             visual.wall(walls[i][j], walls[i][j+1])
     
+    # Preset human path and corresponding tmax and dt
     humanPath = [Node.Node(2,1,0), Node.Node(1,1,0.5), Node.Node(0,1,1), Node.Node(0,2,1.5), Node.Node(0,3,2)]
     tmax = 2
     dt = 0.5
@@ -38,6 +40,7 @@ if __name__== "__main__":
                 t = i*dt
                 nodes.append(Node.Node(row, col, t))
     
+    # Add neighbors to all nodes
     for node in nodes:
         # Get neighbor list
         neighbors = node.findNeighbors(tmax)
@@ -46,7 +49,7 @@ if __name__== "__main__":
             toAdd = next(n for n in nodes if n.row == neighbor.row and n.col == neighbor.col and n.t == neighbor.t)
             node.neighbors.append(toAdd)
                     
-    # Grab/mark the start/goal.
+    # Define/mark the start/treat.
     startCoord = (0,0)
     treatCoord = (7,7)
     catpng = plt.imread("cat_icon.png")
@@ -57,10 +60,12 @@ if __name__== "__main__":
     visual.image(humanPath[0].row, humanPath[0].col, humanpng)
     visual.show(wait="Hit return to start")
 
+    # Set actual start and treat nodes
     start = next(n for n in nodes if n.row == startCoord[0] and n.col == startCoord[1] and n.t == 0)
     treat  = next(n for n in nodes if n.row == treatCoord[0] and n.col == treatCoord[1] and n.t == 0)
     treat.t = inf
 
+    # Run catplanner algorithm and display steps
     catPath = catplanner.catPlanner1(start, treat, humanPath)
     for i in range(len(catPath)):
         visual.image(catPath[i].row, catPath[i].col, catpng)

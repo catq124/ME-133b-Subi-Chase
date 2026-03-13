@@ -19,7 +19,7 @@ from math import inf
 
 # Returns list of Nodes from start --> end (end going towards goal, as time allots) 
 def catPlanner1(start, goal, hpath, safeDist = 2):
-    t = 0
+    # Define variables
     dt = hpath[1].t
     tmax = hpath[len(hpath)-1].t
     start.seen   = True
@@ -29,8 +29,9 @@ def catPlanner1(start, goal, hpath, safeDist = 2):
     path = []
     finalNodes = []
     
-    while True:
+    while True: # All print statements are just for debugging
         print("*************************************")
+        # Break out of loop if onDeck empty
         if not (len(onDeck) > 0):
             print("onDeck empty")
             break
@@ -39,7 +40,9 @@ def catPlanner1(start, goal, hpath, safeDist = 2):
         print("Node: ", node.row, node.col, node.t)
 
         node.done = True
+        # Break out of loop if node is at goal
         if node.row == goal.row and node.col == goal.col:
+            # Set final nodes to only node/goal
             finalNodes = [node]
             break
 
@@ -68,10 +71,13 @@ def catPlanner1(start, goal, hpath, safeDist = 2):
             else: cost = node.cost + 1
             print("Neighbor cost: ", cost)
             
+            # Deal with seen neighbors
             if neighbor.seen:
+                # Skip if existing cost lower
                 if neighbor.cost <= cost:
                     print("Lower neighbor cost already exists")
                     continue
+                # Replace (ie. remove existing) if new cost lower
                 else:
                     print("Removed existing neighbor")
                     onDeck.remove(neighbor)
@@ -84,6 +90,7 @@ def catPlanner1(start, goal, hpath, safeDist = 2):
             print("onDeck: ", onDeck)
             print("---------------------------------------")
 
+    # Determine which final node to use (ie. closest to final goal)
     print("Final Nodes: ", finalNodes) 
     mindist = inf
     finalNode = None
@@ -91,6 +98,8 @@ def catPlanner1(start, goal, hpath, safeDist = 2):
         if node.distance(goal) < mindist:
             mindist = node.distance(goal)
             finalNode = node
+            
+    # Create and return path
     path = [finalNode]
     while path[0].parent:
         path.insert(0, path[0].parent)

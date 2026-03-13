@@ -17,8 +17,9 @@ map = maps.map # X and Y dims of the map
 # Ask use to pickdifficulty
 walls = maps.easy # Specific map walls
 
-RWALL = []
-UWALL = []
+RWALL = [] # List of coordinates of nodes right of a wall
+UWALL = [] # List of coordinates of nodes under a wall
+# Fills RWALL and UWALL
 for wall in walls:
     for i in range(len(wall)-1):
         if wall[i][0] - wall[i+1][0] == 0: #horizontal
@@ -27,9 +28,6 @@ for wall in walls:
         if wall[i][1] - wall[i+1][1] == 0: #vertical
             for y in range(wall[i+1][0] - wall[i][0]):
                 RWALL.append((wall[i][0]+y, wall[i][1]))
-
-print("RWALL: ", RWALL)
-print("UWALL: ", UWALL)
 
 dt = 0.5 #second increments
             
