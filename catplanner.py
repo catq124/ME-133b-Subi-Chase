@@ -18,7 +18,7 @@ from math import inf
 # in human path.py
 
 # Returns list of Nodes from start --> end (end going towards goal, as time allots) 
-def catPlanner1(start, goal, hpath, safeDist = 2):
+def catPlanner1(start, goal, hpath, safeDist = 4):
     # Define variables
     dt = hpath[1].t
     tmax = hpath[len(hpath)-1].t
@@ -28,16 +28,14 @@ def catPlanner1(start, goal, hpath, safeDist = 2):
     onDeck = [start]
     path = []
     finalNodes = []
+    nodeCount = 0
     
     while True: # All print statements are just for debugging
-        print("*************************************")
         # Break out of loop if onDeck empty
         if not (len(onDeck) > 0):
-            print("onDeck empty")
             break
             
         node = onDeck.pop(0)
-        print("Node: ", node.row, node.col, node.t)
 
         node.done = True
         # Break out of loop if node is at goal
@@ -50,48 +48,36 @@ def catPlanner1(start, goal, hpath, safeDist = 2):
         if node.t == tmax:
             finalNodes.append(node)
 
-        print("Neighbor list: ", node.neighbors)
         for neighbor in node.neighbors:
-            print("Neighbor: ", neighbor.row, neighbor.col, neighbor.t)
+            nodeCount +=1
             # Skip if already done or would be out of time
             if neighbor.done or neighbor.t > tmax:
-                print("Neighbor done")
                 continue
             # Get human node at this neighbor's time
             hnode = hpath[int(neighbor.t/dt)]
-            print("Hnode: ", hnode.row, hnode.col)
             # Skip if neighbor would be caught
             if neighbor.distance(hnode) < safeDist and neighbor.lineOfSight(hnode):
-                print("Line of sight: ", neighbor.lineOfSight(hnode))
-                print("Neighbor would get caught")
                 continue
             # Define neighbor cost
             if neighbor.row == node.row and neighbor.col == node.col:
                 cost = node.cost
             else: cost = node.cost + 1
-            print("Neighbor cost: ", cost)
             
             # Deal with seen neighbors
             if neighbor.seen:
                 # Skip if existing cost lower
                 if neighbor.cost <= cost:
-                    print("Lower neighbor cost already exists")
                     continue
                 # Replace (ie. remove existing) if new cost lower
                 else:
-                    print("Removed existing neighbor")
                     onDeck.remove(neighbor)
             
             neighbor.seen = True
             neighbor.cost = cost
             neighbor.parent = node
-            print("Neighbor added")
             bisect.insort(onDeck, neighbor)
-            print("onDeck: ", onDeck)
-            print("---------------------------------------")
-
+        
     # Determine which final node to use (ie. closest to final goal)
-    print("Final Nodes: ", finalNodes) 
     mindist = inf
     finalNode = None
     for node in finalNodes:
@@ -101,8 +87,11 @@ def catPlanner1(start, goal, hpath, safeDist = 2):
             
     # Create and return path
     path = [finalNode]
+    if path[0] == None: return None
     while path[0].parent:
         path.insert(0, path[0].parent)
+    
+    print(f'Nodes checked = {nodeCount}')
     return path
 
 def costtogoest(node, goal, TOGOFACTOR):
@@ -111,9 +100,10 @@ def costtogoest(node, goal, TOGOFACTOR):
 def distfromhum(node, hum, SAFETYFACTOR):
     return SAFETYFACTOR * node.distance(hum)
 
-def catPlanner2(start, goal, hpath, safeDist = 2):
+def Astar(start, goal, hpath, safeDist, gofactor, safety):
     # Define variables
-    TOGOFACTOR = 10
+    TOGOFACTOR = gofactor
+    SAFETYFACTOR = safety
     dt = hpath[1].t
     tmax = hpath[len(hpath)-1].t
     start.seen   = True
@@ -123,6 +113,7 @@ def catPlanner2(start, goal, hpath, safeDist = 2):
     onDeck = [start]
     path = []
     finalNodes = []
+    nodeCount = 0
     
     while True: # All print statements are just for debugging
         print("*************************************")
@@ -147,6 +138,7 @@ def catPlanner2(start, goal, hpath, safeDist = 2):
 
         print("Neighbor list: ", node.neighbors)
         for neighbor in node.neighbors:
+            nodeCount += 1
             print("Neighbor: ", neighbor.row, neighbor.col, neighbor.t)
             # Skip if already done or would be out of time
             if neighbor.done or neighbor.t > tmax:
@@ -161,7 +153,7 @@ def catPlanner2(start, goal, hpath, safeDist = 2):
                 print("Neighbor would get caught")
                 continue
 
-            c_reach = node.c_reach + node.distance(neighbor) 
+            c_reach = node.c_reach + node.distance(neighbor) - distfromhum(node, hnode, SAFETYFACTOR)
             # Define neighbor cost
             # if neighbor.row == node.row and neighbor.col == node.col:
             #     cost = node.cost
@@ -201,4 +193,12 @@ def catPlanner2(start, goal, hpath, safeDist = 2):
     path = [finalNode]
     while path[0].parent:
         path.insert(0, path[0].parent)
+
+    print(f'Nodes checked = {nodeCount}')
     return path
+
+def catPlanner2(start, goal, hpath, safeDist = 4):
+    return Astar(start, goal, hpath, safeDist = 2, gofactor = 10, safety = 0.1)
+
+def catPlanner3(start, goal, hpath, safeDist = 4):
+    return Astar(start, goal, hpath, safeDist = 2, gofactor = 0.1, safety = 20)

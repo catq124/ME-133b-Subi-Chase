@@ -98,7 +98,10 @@ class VisualGrid:
         self.labels[int(row)][int(col)].set_text(text)
     
     def image (self, row, col, img):
-        self.ax.imshow(img, extent=(col, col+1, self.rows-row-1, self.rows-row))
+        return self.ax.imshow(img, extent=(col, col+1, self.rows-row-1, self.rows-row))
+    
+    def eraseim (self, image):
+        image.remove()
 
     # Show the visualization.
     def show(self, wait=False):
