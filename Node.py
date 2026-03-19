@@ -135,6 +135,7 @@ class Node:
             self.orientation(wall1, wall2, node1)*self.orientation(wall1, wall2, node2) < 0):
                     return False
         return True
+    
 
     # Define the "less-than" to enable sorting by cost.
     def __lt__(self, other):

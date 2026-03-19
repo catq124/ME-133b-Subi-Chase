@@ -105,6 +105,100 @@ def catPlanner1(start, goal, hpath, safeDist = 2):
         path.insert(0, path[0].parent)
     return path
 
-def catPlanner2():
+def costtogoest(node, goal, TOGOFACTOR):
+        return TOGOFACTOR * node.distance(goal)
+
+def distfromhum(node, hum, SAFETYFACTOR):
+    return SAFETYFACTOR * node.distance(hum)
+
+def catPlanner2(start, goal, hpath, safeDist = 2):
+    # Define variables
+    TOGOFACTOR = 10
+    dt = hpath[1].t
+    tmax = hpath[len(hpath)-1].t
+    start.seen   = True
+    start.c_reach = 0
+    start.cost = 0 + costtogoest(start, goal, TOGOFACTOR)
+    start.parent = None
+    onDeck = [start]
+    path = []
+    finalNodes = []
     
-    return
+    while True: # All print statements are just for debugging
+        print("*************************************")
+        # Break out of loop if onDeck empty
+        if not (len(onDeck) > 0):
+            print("onDeck empty")
+            break
+            
+        node = onDeck.pop(0)
+        print("Node: ", node.row, node.col, node.t)
+
+        node.done = True
+        # Break out of loop if node is at goal
+        if node.row == goal.row and node.col == goal.col:
+            # Set final nodes to only node/goal
+            finalNodes = [node]
+            break
+
+        # Add node to list of final nodes if at tmax (ie. path could end here)
+        if node.t == tmax:
+            finalNodes.append(node)
+
+        print("Neighbor list: ", node.neighbors)
+        for neighbor in node.neighbors:
+            print("Neighbor: ", neighbor.row, neighbor.col, neighbor.t)
+            # Skip if already done or would be out of time
+            if neighbor.done or neighbor.t > tmax:
+                print("Neighbor done")
+                continue
+            # Get human node at this neighbor's time
+            hnode = hpath[int(neighbor.t/dt)]
+            print("Hnode: ", hnode.row, hnode.col)
+            # Skip if neighbor would be caught
+            if neighbor.distance(hnode) < safeDist and neighbor.lineOfSight(hnode):
+                print("Line of sight: ", neighbor.lineOfSight(hnode))
+                print("Neighbor would get caught")
+                continue
+
+            c_reach = node.c_reach + node.distance(neighbor) 
+            # Define neighbor cost
+            # if neighbor.row == node.row and neighbor.col == node.col:
+            #     cost = node.cost
+            # else: cost = node.cost + 1
+            # print("Neighbor cost: ", cost)
+            
+            # Deal with seen neighbors
+            if neighbor.seen:
+                # Skip if existing cost lower
+                if neighbor.c_reach <= c_reach:
+                    print("Lower neighbor cost already exists")
+                    continue
+                # Replace (ie. remove existing) if new cost lower
+                else:
+                    print("Removed existing neighbor")
+                    onDeck.remove(neighbor)
+            
+            neighbor.seen = True
+            neighbor.c_reach = c_reach
+            neighbor.cost = c_reach + costtogoest(neighbor, goal, TOGOFACTOR)
+            neighbor.parent = node
+            print("Neighbor added")
+            bisect.insort(onDeck, neighbor)
+            print("onDeck: ", onDeck)
+            print("---------------------------------------")
+
+    # Determine which final node to use (ie. closest to final goal)
+    print("Final Nodes: ", finalNodes) 
+    mindist = inf
+    finalNode = None
+    for node in finalNodes:
+        if node.distance(goal) < mindist:
+            mindist = node.distance(goal)
+            finalNode = node
+            
+    # Create and return path
+    path = [finalNode]
+    while path[0].parent:
+        path.insert(0, path[0].parent)
+    return path

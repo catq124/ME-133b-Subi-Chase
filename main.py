@@ -1,5 +1,6 @@
 from visualgrid import VisualGrid
 import matplotlib.pyplot as plt
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from math import inf
 import maps 
 import Node
@@ -27,6 +28,26 @@ if __name__== "__main__":
     for i in range(len(walls)):
         for j in range(len(walls[i])-1):
             visual.wall(walls[i][j], walls[i][j+1])
+
+    # Define/mark the start/treat.
+    startCoord = (0,0)
+    treatCoord = (7,7)
+    catpng = plt.imread("cat_icon.png")
+    treatpng = plt.imread("fish_icon.png")
+    humanpng = plt.imread("human_icon.png")
+     # Human start from map
+    if mapDiff == 1:
+        human_start_xy = maps.start_e
+    elif mapDiff == 2:
+        human_start_xy = maps.start_m
+    else:
+        human_start_xy = maps.start_d
+    visual.image(startCoord[0], startCoord[1], catpng)
+    visual.image(treatCoord[0],  treatCoord[1],  treatpng)
+    visual.image(human_start_xy[0], human_start_xy[1], humanpng)
+    visual.show(wait="Hit return to start")
+
+   
     
     # Preset human path and corresponding tmax and dt
     # humanPath = [Node.Node(2,1,0), Node.Node(1,1,0.5), Node.Node(0,1,1), Node.Node(0,2,1.5), Node.Node(0,3,2)]
@@ -37,14 +58,6 @@ if __name__== "__main__":
     print(f"Choose human goal node between 0 ≤ row ≤ {rows-1} and 0 ≤ col ≤ {cols-1}: ")
     human_goal_row = int(input("Human goal row: "))
     human_goal_col = int(input("Human goal col: "))
-
-    # Human start from map
-    if mapDiff == 1:
-        human_start_xy = maps.start_e
-    elif mapDiff == 2:
-        human_start_xy = maps.start_m
-    else:
-        human_start_xy = maps.start_d
     
     # Build human graph from human_path.py
     human_nodes = []
@@ -68,7 +81,7 @@ if __name__== "__main__":
                 node.neighbors.append(matches[0])
 
     # Grab/mark the start/goal
-    hsrow, hscol = human_path.rows_cols(human_start_xy[0], human_start_xy[1], rows)
+    hsrow, hscol = human_start_xy[0], human_start_xy[1]
     hgrow, hgcol = human_goal_row, human_goal_col
     human_start = [n for n in human_nodes if (n.row, n.col) == (hsrow, hscol)][0]
     human_goal  = [n for n in human_nodes if (n.row, n.col) == (hgrow, hgcol)][0]
@@ -100,16 +113,6 @@ if __name__== "__main__":
             toAdd = next(n for n in nodes if n.row == neighbor.row and n.col == neighbor.col and n.t == neighbor.t)
             node.neighbors.append(toAdd)
                     
-    # Define/mark the start/treat.
-    startCoord = (0,0)
-    treatCoord = (7,7)
-    catpng = plt.imread("cat_icon.png")
-    treatpng = plt.imread("fish_icon.png")
-    humanpng = plt.imread("human_icon.png")
-    visual.image(startCoord[0], startCoord[1], catpng)
-    visual.image(treatCoord[0],  treatCoord[1],  treatpng)
-    visual.image(humanPath[0].row, humanPath[0].col, humanpng)
-    visual.show(wait="Hit return to start")
 
     # Set actual start and treat nodes
     start = next(n for n in nodes if n.row == startCoord[0] and n.col == startCoord[1] and n.t == 0)
@@ -117,13 +120,92 @@ if __name__== "__main__":
     treat.t = inf
 
     # Run catplanner algorithm and display steps
-    catPath = catplanner.catPlanner1(start, treat, humanPath)
-    for i in range(min(len(catPath), len(humanPath))):
-        visual.image(catPath[i].row, catPath[i].col, catpng)
-        visual.image(humanPath[i].row, humanPath[i].col, humanpng)
-        print("CStep ", i, ": ", catPath[i].row, catPath[i].col)
-        print("HStep ", i, ": ", humanPath[i].row, humanPath[i].col)
-        visual.show(wait="Hit return for next step")
+    catPath = catplanner.catPlanner2(start, treat, humanPath)
+
+    print("Human length: ", humanPath)
+    print("Cat length: ", catPath)
+
+
+    catimgbox = OffsetImage(catpng, zoom = 0.2)
+    humanimgbox = OffsetImage(humanpng, zoom = 0.3)
+
+    print(start.col, start.row)
+    cat = AnnotationBbox(
+        catimgbox,
+        (start.col + 0.5, rows - start.row - 0.5),
+        frameon=False,
+        zorder=5)
+
+    human = AnnotationBbox(
+        humanimgbox,
+        (human_start_xy[1] + 0.5, rows - human_start_xy[0] - 0.5),
+        frameon=False,
+        zorder=5)
     
 
+    
+    visual.ax.add_artist(cat)
+    visual.ax.add_artist(human)
+
+    visual.show(wait="Hit return to start")
+  
+####################  REPORT  ####################
+    # Show the path in red.
+    if not catPath:
+        print("UNABLE TO FIND A PATH")
+    else:
+        print("Marking the cat and human paths")
+
+        # draw the entire path and keep it
+        for i in range(len(catPath) - 1):
+            r1 = catPath[i].row
+            c1 = catPath[i].col
+            r2 = catPath[i+1].row
+            c2 = catPath[i+1].col
+
+            visual.ax.plot(
+                [c1 + 0.5, c2 + 0.5],
+                [rows - r1 - 0.5, rows - r2 - 0.5],
+                color='red',
+                linewidth=3,
+                zorder=4
+            )
+
+        for i in range(len(humanPath) - 1):
+            r1 = humanPath[i].row
+            c1 = humanPath[i].col
+            r2 = humanPath[i+1].row
+            c2 = humanPath[i+1].col
+
+            visual.ax.plot(
+                [c1 + 0.5, c2 + 0.5],
+                [rows - r1 - 0.5, rows - r2 - 0.5],
+                color='blue',
+                linewidth=3,
+                zorder=4
+            )
+        
+        for i in range(1, len(catPath)):
+            cat.remove()
+            human.remove()
+
+            cat = AnnotationBbox(
+                catimgbox,
+                (catPath[i].col + 0.5, rows - catPath[i].row - 0.5),
+                frameon=False,
+                zorder=5
+            )
+
+            human = AnnotationBbox(
+                humanimgbox,
+                (humanPath[i].col + 0.5, rows - humanPath[i].row - 0.5),
+                frameon=False,
+                zorder=5
+            )
+            visual.ax.add_artist(cat)
+            visual.ax.add_artist(human)
+
+            visual.show(0.5)
+
+        
     

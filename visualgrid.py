@@ -79,7 +79,7 @@ class VisualGrid:
 
     # Draw a wall (line from start coord to end)
     def wall(self, start, end):
-        self.ax.plot([start[1], end[1]], [self.rows-start[0], self.rows-end[0]], color='red', lw=2)
+        self.ax.plot([start[1], end[1]], [self.rows-start[0], self.rows-end[0]], color='black', lw=2)
 
     # Create a text label in a grid element.
     def label(self, row, col, text):
