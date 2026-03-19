@@ -117,7 +117,7 @@ if __name__== "__main__":
         treat.t = inf
 
         # Run catplanner algorithm and display steps
-        catPath = catplanner.catPlanner1(start, treat, humanPath)
+        catPath = catplanner.catPlanner3(start, treat, humanPath)
 
         catimgbox = OffsetImage(catpng, zoom = 0.18)
         humanimgbox = OffsetImage(humanpng, zoom = 0.3)

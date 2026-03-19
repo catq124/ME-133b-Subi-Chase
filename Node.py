@@ -15,7 +15,7 @@ import maps
 map = maps.map # X and Y dims of the map
 
 # Ask use to pickdifficulty
-walls = maps.easy # Specific map walls
+walls = maps.diff # Specific map walls
 
 RWALL = [] # List of coordinates of nodes right of a wall
 UWALL = [] # List of coordinates of nodes under a wall
